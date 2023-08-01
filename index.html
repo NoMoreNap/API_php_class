@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <div class="wrapper">
+    </div>
+    <div class="buttons">
+        <button class="allUsers">Все пользователи</button>
+        <button class="byUserId">Получить посты по ID</button>
+        <button class="todos">Получить TODOS по ID</button>
+        <button class="create">Создать пост</button>
+        <button class="edit">Изменить пост</button>
+        <button class="delete">Удалить пост</button>
+
+
+    </div>
+    <script>
+        const allUsers = document.querySelector('.allUsers');
+        const byUserId = document.querySelector('.byUserId');
+        const todos = document.querySelector('.todos');
+        const create = document.querySelector('.create');
+        const edit = document.querySelector('.edit');
+        const toDelete = document.querySelector('.delete');
+
+
+
+        // get all users
+        allUsers.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const response = await API('http://tony.ua/req.php?mode=all')
+            createBoard('Все пользователи: ', response, 'users')
+        })
+        // posts by user id
+        byUserId.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const id = prompt('Введите ID пользователя')
+            const response = await API(`http://tony.ua/req.php?mode=byid&id=${id}`)
+            createBoard('Все посты пользователя: ', response, 'posts')
+        })
+        // todos by user id
+        todos.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const id = prompt('Введите ID пользователя')
+            const response = await API(`http://tony.ua/req.php?mode=todos&id=${id}`)
+            createBoard('Все TODOS пользователя: ', response, 'todos')
+        })
+        // create a resource
+        create.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const id = prompt('Введите ID пользователя')
+            const title = prompt('Введите заголовок')
+            const text = prompt('Введите текст')
+            const formData = constructFormData({userId: id, title, text})
+            const data = {
+                method: 'POST',
+                body: formData
+            }
+            const response = await API(`http://tony.ua/req.php?mode=add`, data)
+            alert(`Пост с id ${response.id} успешно создан!`)
+        })
+        // edit a resource
+        edit.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const postId = prompt('Введите ID поста')
+            const userId = prompt('Введите ID пользователя')
+            const title = prompt('Введите заголовок')
+            const text = prompt('Введите текст')
+            const formData = constructFormData({postId, userId, title, text})
+            const data = {
+                method: 'POST',
+                body: formData
+            }
+            const response = await API(`http://tony.ua/req.php?mode=edit`, data)
+            alert(`Пост с id ${response.postId} успешно отредактирован!`)
+        })
+        // delete a resource
+        toDelete.addEventListener('click', async (e) => {
+            e.preventDefault()
+            const postId = prompt('Введите ID поста')
+            const formData = constructFormData({postId})
+            const data = {
+                method: 'POST',
+                body: formData
+            }
+            const response = await API(`http://tony.ua/req.php?mode=delete`, data)
+            alert(`Пост с id ${postId} успешно удален!`)
+        })
+
+        function constructFormData(data) {
+            const {postId,userId,title,text} = data
+            const formData = new FormData()
+            postId ? formData.append('postId', postId) : noop()
+            userId ? formData.append('userId', userId) : noop()
+            title ? formData.append('title', title) : noop()
+            text ? formData.append('text', text)  : noop()
+            return formData;
+        }
+
+        async function API(url, data) {
+            let response = await fetch(url, data ? data : {})
+            if (response.status > 201) {
+                response = await response.json()
+                alert(response.text)
+                return
+            }
+            response = await response.json()
+            return response
+        }
+
+        function createBoard(title, list, mode) {
+            const wrapper = document.querySelector('.wrapper');
+            // create board
+            const board = document.createElement('div');
+            board.classList.add('board')
+            // create title
+            const h1 = document.createElement('h1');
+            board.classList.add('board-title')
+            h1.textContent = title
+            // create list
+            const ul = document.createElement('ul');
+            board.classList.add('board-title')
+            // constructor
+            wrapper.appendChild(board)
+            board.appendChild(ul).appendChild(h1)
+            if(list.length) {
+                list.reverse()
+                for (const el of list) {
+                    const li = document.createElement('ul');
+                    const spanFirst = document.createElement('span')
+                    const spanSecond = document.createElement('span')
+                    switch (mode) {
+                        case 'users': {
+                            spanFirst.textContent = `Name: ${el.name} | `
+                            spanSecond.textContent = `Phone: ${el.phone}`
+                            break
+                        }
+                        case 'posts': {
+                            spanFirst.textContent = `Title: ${el.title} | `
+                            spanSecond.textContent = `Text: ${el.body}`
+                            break
+                        }
+                        case 'todos': {
+                            spanFirst.textContent = `Title: ${el.title} | `
+                            spanSecond.textContent = `Is completed: ${el.completed}`
+                            break
+                        }
+                    }
+                    li.appendChild(spanFirst).appendChild(spanSecond)
+                    ul.appendChild(li)
+                }
+            }
+
+        }
+        function noop(){}
+    </script>
+</body>
+</html>
